@@ -7,16 +7,22 @@ import (
 )
 
 // Store provides all functions to execute DB queries and transactions
-type Store struct {
+type Store interface {
+	Querier
+	TransferTx(ctx context.Context, arg TransferTxParam) (TransferTxResult, error)
+}
+
+// SQLStore provides all functions to execute SQL queries and transactions
+type SQLStore struct {
 	*Queries
 	db *sql.DB
 }
 
-func NewStore(db *sql.DB) *Store {
-	return &Store{db: db, Queries: New(db)}
+func NewStore(db *sql.DB) Store {
+	return &SQLStore{db: db, Queries: New(db)}
 }
 
-func (s *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
+func (s *SQLStore) execTx(ctx context.Context, fn func(*Queries) error) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -44,10 +50,10 @@ type TransferTxParam struct {
 // TransferTxResult is the result of the transfer transaction
 type TransferTxResult struct {
 	Transfer    Transfer `json:"transfer"`
-	FromAccount Account  `json:"from_account"`
-	ToAccount   Account  `json:"to_account"`
-	FromEntry   Entry    `json:"from_entry"`
-	ToEntry     Entry    `json:"to_entry"`
+	FromAccount Account  `json:"fromAccount"`
+	ToAccount   Account  `json:"toAccount"`
+	FromEntry   Entry    `json:"fromEntry"`
+	ToEntry     Entry    `json:"toEntry"`
 }
 
 var txKey = struct{}{}
@@ -55,7 +61,7 @@ var txKey = struct{}{}
 // TransferTx performs a money transfer from one account to another
 //
 // It creates a transfer record, add both accounts entries and update both accounts balance within a single db transaction
-func (s *Store) TransferTx(ctx context.Context, arg TransferTxParam) (TransferTxResult, error) {
+func (s *SQLStore) TransferTx(ctx context.Context, arg TransferTxParam) (TransferTxResult, error) {
 	var result TransferTxResult
 
 	err := s.execTx(ctx, func(q *Queries) error {

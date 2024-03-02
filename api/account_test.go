@@ -36,7 +36,7 @@ func TestGetAccountAPI(t *testing.T) {
 					Return(account, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusCreated, recorder.Code)
+				require.Equal(t, http.StatusOK, recorder.Code)
 				requireBodyMatchAccount(t, recorder.Body, account)
 			},
 		},
@@ -261,7 +261,7 @@ func TestListAccountsAPI(t *testing.T) {
 					Return(accounts, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusCreated, recorder.Code)
+				require.Equal(t, http.StatusOK, recorder.Code)
 				requireBodyMatchAccounts(t, recorder.Body, accounts)
 			},
 		},

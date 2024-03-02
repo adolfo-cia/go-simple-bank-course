@@ -6,6 +6,7 @@ import (
 
 	db "github.com/adolfo-cia/go-simple-bank-course/db/sqlc"
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 )
 
 type createAccountRequest struct {
@@ -24,6 +25,13 @@ func (s *Server) createAccount(ctx *gin.Context) {
 
 	newAccount, err := s.store.CreateAccount(ctx, arg)
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			switch pqErr.Code.Name() {
+			case "unique_violation", "foreign_key_violation":
+				ctx.JSON(http.StatusForbidden, errorResponse(err))
+				return
+			}
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -52,7 +60,7 @@ func (s *Server) getAccount(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, account)
+	ctx.JSON(http.StatusOK, account)
 }
 
 type listAccountsRequest struct {
@@ -77,5 +85,5 @@ func (s *Server) listAccounts(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, accounts)
+	ctx.JSON(http.StatusOK, accounts)
 }

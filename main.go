@@ -15,6 +15,7 @@ func main() {
 	if err != nil {
 		log.Fatalln("Cannot load config: ", err)
 	}
+	log.Println(config)
 
 	conn, err := sql.Open(config.DBDriver, config.DBSource)
 	if err != nil {
@@ -22,7 +23,10 @@ func main() {
 	}
 
 	store := db.NewStore(conn)
-	server := api.NewServer(store)
+	server, err := api.NewServer(config, store)
+	if err != nil {
+		log.Fatalln("cannot create new server: ", err)
+	}
 
 	err = server.Start(config.ServerAddress)
 	if err != nil {

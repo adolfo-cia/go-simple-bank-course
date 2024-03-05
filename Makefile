@@ -1,6 +1,14 @@
-# docker pull postgres:14.11-alpine
-postgres:
+postgres-pull:
+	docker pull postgres:14.11-alpine
+
+postgres-run:
 	docker run --name postgres14 -p 5432:5432 -e POSTGRES_PASSWORD=root -e POSTGRES_USER=root -d postgres:14.11-alpine
+
+postgres-start:
+	docker start postgres14
+
+postgres-stop:
+	docker stop postgres14
 
 createdb:
 	docker exec -it postgres14 createdb --username=root --owner=root simple_bank
@@ -34,4 +42,4 @@ server:
 mock:
 	mockgen -package mockdb -destination db/mock/store.go github.com/adolfo-cia/go-simple-bank-course/db/sqlc Store
 
-.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test server mock
+.PHONY: postgres-pull postgres-run postgres-start postgres-stop createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test server mock

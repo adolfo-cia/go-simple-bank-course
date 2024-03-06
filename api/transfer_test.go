@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	mockdb "github.com/adolfo-cia/go-simple-bank-course/db/mock"
 	db "github.com/adolfo-cia/go-simple-bank-course/db/sqlc"
+	"github.com/adolfo-cia/go-simple-bank-course/token"
 	"github.com/adolfo-cia/go-simple-bank-course/utils"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -17,21 +19,31 @@ import (
 
 func TestTransferAPI(t *testing.T) {
 	amount := int64(10)
-	account1 := randomAccount()
-	account2 := randomAccount()
-	account3 := randomAccount()
+
+	user1, _ := randomUser(t)
+	user2, _ := randomUser(t)
+	user3, _ := randomUser(t)
+
+	account1 := randomAccount(user1.Username)
+	account2 := randomAccount(user2.Username)
+	account3 := randomAccount(user3.Username)
+
 	account1.Currency = "USD"
 	account2.Currency = "USD"
 	account3.Currency = "ARS"
 
 	testCases := []struct {
 		name          string
+		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 		reqBody       transferRequest
 		buildStubs    func(store *mockdb.MockStore)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name: "OK",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, time.Minute)
+			},
 			reqBody: transferRequest{
 				FromAccountID: account1.ID,
 				ToAccountID:   account2.ID,
@@ -60,6 +72,9 @@ func TestTransferAPI(t *testing.T) {
 		},
 		{
 			name: "InternalError",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, time.Minute)
+			},
 			reqBody: transferRequest{
 				FromAccountID: account1.ID,
 				ToAccountID:   account2.ID,
@@ -89,6 +104,9 @@ func TestTransferAPI(t *testing.T) {
 		},
 		{
 			name: "BadRequest -  No FromAccountId",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, time.Minute)
+			},
 			reqBody: transferRequest{
 				ToAccountID: account2.ID,
 				Amount:      amount,
@@ -111,6 +129,9 @@ func TestTransferAPI(t *testing.T) {
 		},
 		{
 			name: "BadRequest -  No ToAccountId",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, time.Minute)
+			},
 			reqBody: transferRequest{
 				FromAccountID: account1.ID,
 				Amount:        amount,
@@ -133,6 +154,9 @@ func TestTransferAPI(t *testing.T) {
 		},
 		{
 			name: "BadRequest -  wrong FromtAccountId",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, time.Minute)
+			},
 			reqBody: transferRequest{
 				FromAccountID: -1,
 				ToAccountID:   account2.ID,
@@ -156,6 +180,9 @@ func TestTransferAPI(t *testing.T) {
 		},
 		{
 			name: "BadRequest -  wrong ToAccountId",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, time.Minute)
+			},
 			reqBody: transferRequest{
 				FromAccountID: account1.ID,
 				ToAccountID:   -1,
@@ -179,6 +206,9 @@ func TestTransferAPI(t *testing.T) {
 		},
 		{
 			name: "BadRequest -  Invalid Currency",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, time.Minute)
+			},
 			reqBody: transferRequest{
 				FromAccountID: account1.ID,
 				ToAccountID:   account2.ID,
@@ -202,6 +232,9 @@ func TestTransferAPI(t *testing.T) {
 		},
 		{
 			name: "BadRequest -  FromAccount Currency Mismatch",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, time.Minute)
+			},
 			reqBody: transferRequest{
 				FromAccountID: account3.ID,
 				ToAccountID:   account2.ID,
@@ -226,6 +259,9 @@ func TestTransferAPI(t *testing.T) {
 		},
 		{
 			name: "BadRequest -  ToAccount Currency Mismatch",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, time.Minute)
+			},
 			reqBody: transferRequest{
 				FromAccountID: account1.ID,
 				ToAccountID:   account3.ID,
@@ -251,6 +287,9 @@ func TestTransferAPI(t *testing.T) {
 		},
 		{
 			name: "NotFound -  FromAccount",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, time.Minute)
+			},
 			reqBody: transferRequest{
 				FromAccountID: account1.ID,
 				ToAccountID:   account2.ID,
@@ -275,6 +314,9 @@ func TestTransferAPI(t *testing.T) {
 		},
 		{
 			name: "NotFound -  ToAccount",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, time.Minute)
+			},
 			reqBody: transferRequest{
 				FromAccountID: account1.ID,
 				ToAccountID:   account2.ID,
@@ -300,6 +342,9 @@ func TestTransferAPI(t *testing.T) {
 		},
 		{
 			name: "InternalServerError -  FromAccount",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, time.Minute)
+			},
 			reqBody: transferRequest{
 				FromAccountID: account1.ID,
 				ToAccountID:   account2.ID,
@@ -324,6 +369,9 @@ func TestTransferAPI(t *testing.T) {
 		},
 		{
 			name: "InternalServerError -  ToAccount",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, time.Minute)
+			},
 			reqBody: transferRequest{
 				FromAccountID: account1.ID,
 				ToAccountID:   account2.ID,
@@ -344,6 +392,57 @@ func TestTransferAPI(t *testing.T) {
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name: "Unauthorized",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			},
+			reqBody: transferRequest{
+				FromAccountID: account1.ID,
+				ToAccountID:   account2.ID,
+				Amount:        amount,
+				Currency:      utils.USD,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetAccount(gomock.Any(), gomock.Any()).
+					Times(0)
+				store.EXPECT().
+					GetAccount(gomock.Any(), gomock.Any()).
+					Times(0)
+				store.EXPECT().
+					TransferTx(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+		},
+		{
+			name: "FromAccountDoesNotBelongToLoggedUser",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, time.Minute)
+			},
+			reqBody: transferRequest{
+				FromAccountID: account2.ID,
+				ToAccountID:   account1.ID,
+				Amount:        amount,
+				Currency:      utils.USD,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetAccount(gomock.Any(), gomock.Eq(account2.ID)).
+					Times(1).Return(account2, nil)
+				store.EXPECT().
+					GetAccount(gomock.Any(), gomock.Any()).
+					Times(0)
+				store.EXPECT().
+					TransferTx(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
 			},
 		},
 	}
@@ -368,6 +467,7 @@ func TestTransferAPI(t *testing.T) {
 			req, err := http.NewRequest(http.MethodPost, "/transfers", bytes.NewReader(data))
 			require.NoError(t, err)
 
+			testCase.setupAuth(t, req, server.tokenMaker)
 			server.router.ServeHTTP(recorder, req)
 
 			//check response

@@ -2,10 +2,12 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 
 	db "github.com/adolfo-cia/go-simple-bank-course/db/sqlc"
+	"github.com/adolfo-cia/go-simple-bank-course/token"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,10 +25,21 @@ func (s *Server) createTransfer(ctx *gin.Context) {
 		return
 	}
 
-	if !s.validAccount(ctx, req.FromAccountID, req.Currency) {
+	authPayload := ctx.MustGet(authorizationPayloadCtxKey).(*token.Payload)
+
+	fromAccount, isValid := s.validAccount(ctx, req.FromAccountID, req.Currency)
+	if !isValid {
 		return
 	}
-	if !s.validAccount(ctx, req.ToAccountID, req.Currency) {
+
+	if fromAccount.Owner != authPayload.Username {
+		ctx.JSON(
+			http.StatusUnauthorized,
+			errorResponse(errors.New("the 'from account' does not belong to authenticated user")))
+		return
+	}
+
+	if _, isValid := s.validAccount(ctx, req.ToAccountID, req.Currency); !isValid {
 		return
 	}
 
@@ -44,7 +57,7 @@ func (s *Server) createTransfer(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, result)
 }
 
-func (s *Server) validAccount(ctx *gin.Context, accountId int64, currency string) (isValid bool) {
+func (s *Server) validAccount(ctx *gin.Context, accountId int64, currency string) (account db.Account, isValid bool) {
 	account, err := s.store.GetAccount(ctx, accountId)
 	if err != nil {
 		if err == sql.ErrNoRows {

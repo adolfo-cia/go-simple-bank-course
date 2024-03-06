@@ -2,15 +2,16 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 
 	db "github.com/adolfo-cia/go-simple-bank-course/db/sqlc"
+	"github.com/adolfo-cia/go-simple-bank-course/token"
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
 )
 
 type createAccountRequest struct {
-	Owner    string `json:"owner" binding:"required"`
 	Currency string `json:"currency" binding:"required,currency"`
 }
 
@@ -21,7 +22,9 @@ func (s *Server) createAccount(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.CreateAccountParams{Owner: req.Owner, Currency: req.Currency, Balance: 0}
+	authPayload := ctx.MustGet(authorizationPayloadCtxKey).(*token.Payload)
+
+	arg := db.CreateAccountParams{Owner: authPayload.Username, Currency: req.Currency, Balance: 0}
 
 	newAccount, err := s.store.CreateAccount(ctx, arg)
 	if err != nil {
@@ -60,6 +63,12 @@ func (s *Server) getAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadCtxKey).(*token.Payload)
+	if account.Owner != authPayload.Username {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New("Unauthorized")))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, account)
 }
 
@@ -75,7 +84,10 @@ func (s *Server) listAccounts(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadCtxKey).(*token.Payload)
+
 	arg := db.ListAccountsParams{
+		Owner:  authPayload.Username,
 		Offset: (req.PageID - 1) * req.PageSize,
 		Limit:  req.PageSize,
 	}

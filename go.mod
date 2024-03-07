@@ -1,6 +1,6 @@
 module github.com/adolfo-cia/go-simple-bank-course
 
-go 1.21.6
+go 1.21.8
 
 require (
 	github.com/gin-gonic/gin v1.9.1

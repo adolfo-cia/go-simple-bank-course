@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:14.11-alpine
+        image: postgres:14.11-alpine3.19
         env:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: root

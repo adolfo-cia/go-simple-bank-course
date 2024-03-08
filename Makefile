@@ -1,8 +1,13 @@
+network:
+	docker network create simplebank-network
+# connect to existing container to network:
+# docker network connect simplebank-network postgres14
+
 postgres-pull:
-	docker pull postgres:14.11-alpine
+	docker pull postgres:14.11-alpine3.19
 
 postgres-run:
-	docker run --name postgres14 -p 5432:5432 -e POSTGRES_PASSWORD=root -e POSTGRES_USER=root -d postgres:14.11-alpine
+	docker run --name postgres14 --network=simplebank-network -p 5432:5432 -e POSTGRES_PASSWORD=root -e POSTGRES_USER=root -d postgres:14.11-alpine3.19
 
 postgres-start:
 	docker start postgres14
@@ -42,4 +47,13 @@ server:
 mock:
 	mockgen -package mockdb -destination db/mock/store.go github.com/adolfo-cia/go-simple-bank-course/db/sqlc Store
 
-.PHONY: postgres-pull postgres-run postgres-start postgres-stop createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test server mock
+simplebank-build:
+	docker build -t simplebank:latest .
+
+simplebank-run:
+	docker run --name simplebank --network=simplebank-network -p 8080:8080 -e GIN_MODE=release -e DB_SOURCE="postgresql://root:root@postgres14:5432/simple_bank?sslmode=disable" simplebank:latest
+# docker run --name simplebank -p 8080:8080 -e GIN_MODE=release simplebank:latest
+# docker run --name simplebank -p 8080:8080 -e GIN_MODE=release -e DB_SOURCE="postgresql://root:root@172.17.0.3:5432/simple_bank?sslmode=disable" simplebank:latest
+
+
+.PHONY: network postgres-pull postgres-run postgres-start postgres-stop createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test server mock simplebank-build simplebank-run

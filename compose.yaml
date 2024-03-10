@@ -1,9 +1,11 @@
 name: simplebank-app
 
 services:
+  
   db:
     container_name: simplebank-db
     image: postgres:14.11-alpine3.19
+    restart: always
     environment:
       - POSTGRES_USER=root
       - POSTGRES_PASSWORD=root
@@ -15,6 +17,20 @@ services:
       interval: 1s
       timeout: 1s
       retries: 5
+    volumes:
+      - db-data:/var/lib/postgresql/data
+  
+  migrate:
+    container_name: simplebank-migrate
+    image: migrate/migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./db/migration:/migration:ro
+    command:
+      [ "-path", "/migration", "-database", "postgresql://root:root@simplebank-db:5432/simple_bank?sslmode=disable", "-verbose", "up" ]
+
   api:
     container_name: simplebank-api
     image: simplebank-api:latest
@@ -26,6 +42,9 @@ services:
     environment:
       - DB_SOURCE=postgresql://root:root@simplebank-db:5432/simple_bank?sslmode=disable
     depends_on:
-      db:
-        condition: service_healthy
-        restart: true
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  db-data:
+    name: simplebank-db-data

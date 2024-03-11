@@ -19,6 +19,8 @@ services:
       retries: 5
     volumes:
       - db-data:/var/lib/postgresql/data
+    networks:
+      - simplebank-network
   
   migrate:
     container_name: simplebank-migrate
@@ -30,6 +32,8 @@ services:
       - ./db/migration:/migration:ro
     command:
       [ "-path", "/migration", "-database", "postgresql://root:root@simplebank-db:5432/simple_bank?sslmode=disable", "-verbose", "up" ]
+    networks:
+      - simplebank-network
 
   api:
     container_name: simplebank-api
@@ -44,7 +48,13 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+    networks:
+      - simplebank-network
 
 volumes:
   db-data:
     name: simplebank-db-data
+
+networks:
+  simplebank-network:
+    name: simplebank-network

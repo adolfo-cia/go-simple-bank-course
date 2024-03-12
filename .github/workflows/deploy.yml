@@ -38,9 +38,7 @@ jobs:
                     ENV_SECRETS, simple_bank
         
         -   name: Set ENV secrets to app.env
-            run: |
-                echo $ENV_SECRETS | jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' 
-                echo $ENV_SECRETS | jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' > app.env 
+            run: echo $ENV_SECRETS | jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' > app.env 
 
         -   name: Build, tag, and push docker image to Amazon ECR
             env:

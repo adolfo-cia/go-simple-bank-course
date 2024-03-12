@@ -35,13 +35,13 @@ jobs:
             uses: aws-actions/aws-secretsmanager-get-secrets@v1
             with:
                 secret-ids: |
-                    simple_bank
+                    ENV_DB_SOURCE, DB_SOURCE
         
         -   name: Check env variables from secret
             run: |
-                echo $SIMPLE_BANK 
-                echo $SIMPLE_BANK.DB_DRIVER    
-                echo $SIMPLE_BANK_DB_DRIVER     
+                touch test.txt
+                echo $ENV_DB_SOURCE > test.txt
+                cat test.txt     
 
         -   name: Build, tag, and push docker image to Amazon ECR
             env:

@@ -29,6 +29,15 @@ jobs:
         -   name: Login to Amazon ECR
             id: login-ecr
             uses: aws-actions/amazon-ecr-login@v2
+
+
+        -   name: Get AWS secrets
+            uses: aws-actions/aws-secretsmanager-get-secrets@v1
+            env:
+                ACTIONS_STEP_DEBUG: true
+            with:
+                secret-ids: |
+                    simple_bank
         
         -   name: Build, tag, and push docker image to Amazon ECR
             env:

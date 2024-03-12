@@ -33,8 +33,6 @@ jobs:
 
         -   name: Get AWS secrets
             uses: aws-actions/aws-secretsmanager-get-secrets@v1
-            env:
-                ACTIONS_STEP_DEBUG: true
             with:
                 secret-ids: |
                     simple_bank

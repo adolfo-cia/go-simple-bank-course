@@ -35,19 +35,19 @@ jobs:
             uses: aws-actions/aws-secretsmanager-get-secrets@v1
             with:
                 secret-ids: |
-                    ENV_DB_SOURCE, DB_SOURCE
+                    ENV_SECRETS, simple_bank
         
         -   name: Check env variables from secret
             run: |
                 touch test.txt
-                echo $ENV_DB_SOURCE > test.txt
+                echo $ENV_SECRETS > test.txt
                 cat test.txt     
 
-        -   name: Build, tag, and push docker image to Amazon ECR
-            env:
-                REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-                REPOSITORY: simplebank
-                IMAGE_TAG: ${{ github.sha }}
-            run: |
-                docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
-                docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+        # -   name: Build, tag, and push docker image to Amazon ECR
+        #     env:
+        #         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        #         REPOSITORY: simplebank
+        #         IMAGE_TAG: ${{ github.sha }}
+        #     run: |
+        #         docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+        #         docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG

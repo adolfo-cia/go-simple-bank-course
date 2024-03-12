@@ -37,6 +37,12 @@ jobs:
                 secret-ids: |
                     simple_bank
         
+        -   name: Check env variables from secret
+            run: |
+                echo $SIMPLE_BANK 
+                echo $SIMPLE_BANK.DB_DRIVER    
+                echo $SIMPLE_BANK_DB_DRIVER     
+
         -   name: Build, tag, and push docker image to Amazon ECR
             env:
                 REGISTRY: ${{ steps.login-ecr.outputs.registry }}

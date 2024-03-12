@@ -37,17 +37,16 @@ jobs:
                 secret-ids: |
                     ENV_SECRETS, simple_bank
         
-        -   name: Check env variables from secret
+        -   name: Set ENV secrets to app.env
             run: |
-                touch test.txt
-                echo $ENV_SECRETS > test.txt
-                cat test.txt     
+                echo $ENV_SECRETS | jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' 
+                echo $ENV_SECRETS | jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' > app.env 
 
-        # -   name: Build, tag, and push docker image to Amazon ECR
-        #     env:
-        #         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        #         REPOSITORY: simplebank
-        #         IMAGE_TAG: ${{ github.sha }}
-        #     run: |
-        #         docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
-        #         docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+        -   name: Build, tag, and push docker image to Amazon ECR
+            env:
+                REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+                REPOSITORY: simplebank
+                IMAGE_TAG: ${{ github.sha }}
+            run: |
+                docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+                docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
